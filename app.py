@@ -60,10 +60,19 @@ def save_to_history(url, result, confidence):
     conn.commit()
     conn.close()
 
-
 def get_recent_history(limit=8):
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT,
+            result TEXT,
+            confidence TEXT,
+            checked_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
     rows = conn.execute(
         "SELECT url, result, confidence, checked_at FROM history ORDER BY id DESC LIMIT ?",
         (limit,)
