@@ -6,3 +6,4 @@ numpy
 joblib
 python-whois
 beautifulsoup4
+requests
