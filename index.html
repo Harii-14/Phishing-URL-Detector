@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phishing URL Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: #05070a;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(0,255,140,0.08), transparent 40%),
+                radial-gradient(circle at 80% 60%, rgba(0,180,255,0.08), transparent 40%);
+            color: #d6ffe8;
+            margin: 0;
+            padding: 45px 18px;
+            min-height: 100vh;
+        }
+        .container { max-width: 680px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 1px solid #00ff9d;
+            border-radius: 20px;
+            color: #00ff9d;
+            font-size: 11px;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 28px;
+            margin: 0 0 6px 0;
+            color: #eaffea;
+            letter-spacing: 1px;
+        }
+        .subtitle { color: #6f8f80; font-size: 13px; }
+
+        .scan-panel {
+            background: #0b1210;
+            border: 1px solid #163326;
+            border-radius: 10px;
+            padding: 22px;
+            box-shadow: 0 0 25px rgba(0,255,157,0.05);
+        }
+        .input-row { display: flex; gap: 10px; }
+        input[type=text] {
+            flex: 1;
+            padding: 13px 14px;
+            border-radius: 6px;
+            border: 1px solid #1f4a38;
+            background: #060a08;
+            color: #d6ffe8;
+            font-family: inherit;
+            font-size: 13.5px;
+            outline: none;
+        }
+        input[type=text]::placeholder { color: #3d5c4f; }
+        input[type=text]:focus { border-color: #00ff9d; }
+        input[type=submit] {
+            padding: 13px 22px;
+            border-radius: 6px;
+            border: 1px solid #00ff9d;
+            background: #062a1c;
+            color: #00ff9d;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            letter-spacing: 1px;
+        }
+        input[type=submit]:hover { background: #00ff9d; color: #04140c; }
+
+        #loading {
+            display: none;
+            margin-top: 16px;
+            color: #6fffbf;
+            font-size: 12.5px;
+            letter-spacing: 0.5px;
+        }
+        .dots::after {
+            content: '';
+            animation: dots 1.2s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+        }
+
+        .result-box {
+            margin-top: 22px;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid;
+        }
+        .result-box.safe { border-color: #00ff9d; background: rgba(0,255,157,0.05); }
+        .result-box.phishing { border-color: #ff3860; background: rgba(255,56,96,0.06); }
+
+        .result-title { font-size: 17px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .result-title.safe { color: #00ff9d; }
+        .result-title.phishing { color: #ff3860; }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #10201a;
+            border-radius: 5px;
+            margin: 14px 0 4px 0;
+            overflow: hidden;
+        }
+        .confidence-fill { height: 100%; border-radius: 5px; }
+        .fill-safe { background: linear-gradient(90deg, #00ff9d, #00c97f); }
+        .fill-phishing { background: linear-gradient(90deg, #ff3860, #c9184a); }
+        .confidence-label { font-size: 12px; color: #7fa896; }
+
+        .reasons {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px dashed #26382f;
+            font-size: 12.5px;
+            color: #ffb3c1;
+        }
+        .reasons ul { margin: 8px 0 0 0; padding-left: 18px; }
+        .reasons li { margin-bottom: 5px; }
+
+        .history-section { margin-top: 45px; }
+        .history-section h3 {
+            color: #6f8f80;
+            font-weight: 500;
+            font-size: 13px;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background: #0b1210;
+            border: 1px solid #163326;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid #14231c; }
+        th { color: #5d7a6e; font-weight: 500; }
+        .badge { padding: 3px 9px; border-radius: 10px; font-size: 10.5px; font-weight: bold; }
+        .badge-safe { background: rgba(0,255,157,0.12); color: #00ff9d; }
+        .badge-phishing { background: rgba(255,56,96,0.12); color: #ff3860; }
+        .url-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #a9c7ba; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="tag">THREAT SCANNER</div>
+            <h1>Phishing URL Detector</h1>
+            <p class="subtitle">Enter a URL to scan it for phishing indicators</p>
+        </div>
+
+        <div class="scan-panel">
+            <form method="POST" onsubmit="showLoading()">
+                <div class="input-row">
+                    <input type="text" name="url" placeholder="https://example.com" value="{{ submitted_url }}" required>
+                    <input type="submit" value="SCAN">
+                </div>
+            </form>
+            <div id="loading" class="dots">Analyzing domain &amp; WHOIS records</div>
+
+            {% if result %}
+            <div class="result-box {{ 'safe' if result == 'Legitimate' else 'phishing' }}">
+                <div class="result-title {{ 'safe' if result == 'Legitimate' else 'phishing' }}">
+                    {% if result == 'Legitimate' %}✔️ SAFE{% else %}✖️ PHISHING DETECTED{% endif %}
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill {{ 'fill-safe' if result == 'Legitimate' else 'fill-phishing' }}" style="width: {{ confidence }}%;"></div>
+                </div>
+                <div class="confidence-label">{{ confidence }}% confidence</div>
+
+                {% if reasons %}
+                <div class="reasons">
+                    <strong>Flagged for:</strong>
+                    <ul>
+                    {% for reason in reasons %}
+                        <li>{{ reason }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if history %}
+        <div class="history-section">
+            <h3>Scan History</h3>
+            <table>
+                <tr>
+                    <th>URL</th>
+                    <th>Result</th>
+                    <th>Confidence</th>
+                    <th>Time</th>
+                </tr>
+                {% for row in history %}
+                <tr>
+                    <td class="url-cell">{{ row.url }}</td>
+                    <td><span class="badge {{ 'badge-safe' if row.result == 'Legitimate' else 'badge-phishing' }}">{{ row.result }}</span></td>
+                    <td>{{ row.confidence }}%</td>
+                    <td>{{ row.checked_at }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
