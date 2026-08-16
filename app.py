@@ -11,10 +11,10 @@ from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-model = joblib.load("model/phishing_model.pkl")
-feature_columns = joblib.load("model/feature_columns.pkl")
+model = joblib.load("phishing_model.pkl")
+feature_columns = joblib.load("feature_columns.pkl")
 
-DB_FILE = "model/history.db"
+DB_FILE = "history.db"
 
 POPULAR_DOMAINS = [
     'google.com', 'facebook.com', 'amazon.com', 'paypal.com', 'apple.com',
